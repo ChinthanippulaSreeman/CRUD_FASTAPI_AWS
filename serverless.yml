@@ -1,0 +1,68 @@
+service: crud-fastapi-dynamodb
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-west-2
+  environment:
+    TABLE_NAME: BFS
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+        - "dynamodb:Scan"
+        - "dynamodb:PutItem"
+        - "dynamodb:GetItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:DeleteItem"
+        - "dynamodb:DescribeTable"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/BFS"
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/BFS/*"
+
+functions:
+  app:
+    handler: main.handler
+    timeout: 30
+    events:
+      - httpApi: '*'
+
+plugins:
+  - serverless-python-requirements
+  - serverless-iam-roles-per-function
+
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    slim: true
+
+resources:
+  Resources:
+    CrudDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: BFS
+        AttributeDefinitions:
+          - AttributeName: ID
+            AttributeType: S
+          - AttributeName: CITY
+            AttributeType: S
+        KeySchema:
+          - AttributeName: ID
+            KeyType: HASH
+          - AttributeName: CITY
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: CityIndex
+            KeySchema:
+              - AttributeName: CITY
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+
+  
